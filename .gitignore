@@ -1,0 +1,6 @@
+build/
+CMakeFiles/
+*.cmake
+CMakeCache.txt
+Makefile
+jwt_dump
