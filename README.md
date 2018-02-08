@@ -9,6 +9,7 @@ A c++ compiler supporting c++14, such as clang 4.0+ or a recent Visual Studio/MS
 
 To build, on a mac:
 ```
+mkdir build
 cd build
 cmake ..
 make && make tst && make install
