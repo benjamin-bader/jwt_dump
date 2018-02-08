@@ -6,8 +6,8 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 project(jwt_dump)
 
-include_directories(include)
+enable_testing()
 
-file(GLOB SOURCES "src/*.cc")
-
-add_executable(jwt_dump ${SOURCES})
+add_subdirectory(main)
+add_subdirectory(test)
+add_subdirectory(libjwt)

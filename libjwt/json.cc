@@ -223,73 +223,74 @@ public:
 class PrintingTokenVisitor : public ITokenVisitor
 {
 public:
-  PrintingTokenVisitor(std::ostream& os) : os(os)
+  PrintingTokenVisitor(std::ostream& os)
+      : os_(os)
   {}
 
-  void on_object_start(const Token& token) override
+  virtual void on_object_start(const Token& token) override
   {
     assert_writeable_and_update(token);
-    os << "{";
+    os() << "{";
     push_object();
-    newline_and_indent();
+    newline_and_indent();\
   }
 
-  void on_field_separator(const Token& token) override
+  virtual void on_field_separator(const Token& token) override
   {
     assert_writeable_and_update(token);
-    os << ": ";
+    os() << ": ";
   }
 
-  void on_object_end(const Token& token) override
+  virtual void on_object_end(const Token& token) override
   {
     assert_writeable_and_update(token);
     pop_object();
     newline_and_indent();
-    os << "}";
+    os() << "}";
   }
 
-  void on_array_start(const Token& token) override
+  virtual void on_array_start(const Token& token) override
   {
     assert_writeable_and_update(token);
-    os << "[";
+    os() << "[";
     push_array();
     newline_and_indent();
   }
 
-  void on_array_end(const Token& token) override
+  virtual void on_array_end(const Token& token) override
   {
     assert_writeable_and_update(token);
     pop_array();
     newline_and_indent();
-    os << "]";
+    os() << "]";
   }
 
-  void on_element_separator(const Token& token) override
+  virtual void on_element_separator(const Token& token) override
   {
     assert_writeable_and_update(token);
-    os << ",";
+    os() << ",";
     newline_and_indent();
   }
 
-  void on_string(const Token& token) override
+  virtual void on_string(const Token& token) override
   {
     assert_writeable_and_update(token);
     write_token(token);
   }
 
-  void on_number(const Token& token) override
+  virtual void on_number(const Token& token) override
   {
     assert_writeable_and_update(token);
     write_token(token);
   }
 
-  void on_literal(const Token& token) override
+  virtual void on_literal(const Token& token) override
   {
     assert_writeable_and_update(token);
     write_token(token);
   }
 
-  void on_eof() override
+  virtual void on_eof() override
   {
     if (contexts_.size() != 0)
     {
@@ -298,23 +299,34 @@ public:
     }
   }
 
+protected:
+  std::ostream& os()
+  {
+    return os_;
+  }
+
+  bool is_expecting_object_key() const noexcept
+  {
+    return in_object() && contexts_.top().ows == owsExpectKey;
+  }
+
 private: // output functions
   void write_token(const Token& token)
   {
-    os.write(token.text, token.end - token.begin);
+    os().write(token.text, token.end - token.begin);
   }
 
   void newline_and_indent()
   {
-    os << newline;
+    os() << newline;
     indent();
   }
 
-  void indent() const
+  void indent()
   {
     for (int i = 0; i < contexts_.size(); ++i)
     {
-      os << indent_unit;
+      os() << indent_unit;
     }
   }
 
@@ -385,9 +397,66 @@ private:
   }
 
 private:
-  std::ostream& os;
+  std::ostream& os_;
   std::stack<WriteContext> contexts_;
+}; // class PrintingTokenVisitor
+
+
+namespace Colors
+{
+
+constexpr const char* field_name = "\033[34;1m";
+constexpr const char* string_literal = "\033[32;1m";
+
+constexpr const char* reset = "\033[0m";
+
+
+}
+
+class AnsiPrintingTokenVisitor : public PrintingTokenVisitor
+{
+public:
+  AnsiPrintingTokenVisitor(std::ostream& os) : PrintingTokenVisitor(os)
+  {}
+
+  virtual void on_string(const Token& token) override
+  {
+    const char* color_name;
+    if (is_expecting_object_key())
+    {
+      color_name = Colors::field_name;
+    }
+    else
+    {
+      color_name = Colors::string_literal;
+    }
+
+    AnsiColor(os(), Colors::field_name);
+    PrintingTokenVisitor::on_string(token);
+  }
+
+private:
+  class AnsiColor
+  {
+  public:
+    AnsiColor(std::ostream& os, const char* color)
+        : os_(os)
+    {
+      os_ << color;
+    }
+
+    ~AnsiColor()
+    {
+      os_ << Colors::reset;
+    }
+
+  private:
+    std::ostream& os_;
+  };
 };
+
+
+/////////////////////
 
 class JsonLexer
 {
@@ -571,26 +640,27 @@ private:
 
   bool read_number_token(Token& token, size_t tokenStart) noexcept
   {
-    for (size_t i = ix_; i < end_; ++i)
+    // we _definitely_ don't care about validating correct floating-point here, just that
+    // it _might_ be a number.
+    size_t i = ix_;
+    while (i < end_)
     {
       char c = char_at(i);
       if (isdigit(c) || c == '.' || c == 'e' || c == 'E' || c == '-' || c == '+')
       {
-        // we _definitely_ don't care about validating correct floating-point here, just that
-        // it _might_ be a number.
+        i++;
         continue;
       }
 
-      token.type = TokenType::Number;
-      token.begin = tokenStart;
-      token.end = i;
-      token.text = text_.c_str() + tokenStart;
-      ix_ = i;
-      return true;
+      break;
     }
 
-    // unterminated number literal
-    return false;
+    token.type = TokenType::Number;
+    token.begin = tokenStart;
+    token.end = i;
+    token.text = text_.c_str() + tokenStart;
+    ix_ = i;
+    return true;
   }
 
   bool read_literal_token(Token& token, size_t tokenStart, const char* expected) noexcept
@@ -662,9 +732,9 @@ private:
   const std::string& text_;
   size_t ix_;
   size_t end_;
-}; // class JsonPrinter
+}; // class JsonLexer
 
-}
+} // anonymous namespace
 
 std::ostream& pretty_print_json(std::ostream& os, const std::string& json)
 {

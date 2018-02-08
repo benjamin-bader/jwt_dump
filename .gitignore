@@ -3,4 +3,9 @@ CMakeFiles/
 *.cmake
 CMakeCache.txt
 Makefile
+Testing
+gtest*
+gmock*
 jwt_dump
+
+.DS_Store
