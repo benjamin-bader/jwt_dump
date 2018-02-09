@@ -22,9 +22,12 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <cctype>
 #include <iostream>
 #include <iterator>
+#include <memory>
 #include <sstream>
 #include <stack>
 #include <vector>
+
+#include "termcolor.hpp"
 
 namespace jwt {
 
@@ -421,17 +424,17 @@ public:
 
   virtual void on_string(const Token& token) override
   {
-    const char* color_name;
+    AnsiColor::color_manip color;
     if (is_expecting_object_key())
     {
-      color_name = Colors::field_name;
+      color = termcolor::green;
     }
     else
     {
-      color_name = Colors::string_literal;
+      color = termcolor::cyan;
     }
 
-    AnsiColor(os(), Colors::field_name);
+    AnsiColor ac(os(), color);
     PrintingTokenVisitor::on_string(token);
   }
 
@@ -439,7 +442,9 @@ private:
   class AnsiColor
   {
   public:
-    AnsiColor(std::ostream& os, const char* color)
+    typedef std::ostream& (*color_manip)(std::ostream&);
+
+    AnsiColor(std::ostream& os, color_manip color)
         : os_(os)
     {
       os_ << color;
@@ -447,7 +452,7 @@ private:
 
     ~AnsiColor()
     {
-      os_ << Colors::reset;
+      os_ << termcolor::reset;
     }
 
   private:
@@ -736,12 +741,14 @@ private:
 
 } // anonymous namespace
 
-std::ostream& pretty_print_json(std::ostream& os, const std::string& json)
+std::ostream& pretty_print_json(std::ostream& os, const std::string& json, bool use_ansi_colors)
 {
-  PrintingTokenVisitor visitor(os);
-  JsonLexer lexer(json);
+  std::unique_ptr<ITokenVisitor> visitor = use_ansi_colors
+      ? std::make_unique<AnsiPrintingTokenVisitor>(os)
+      : std::make_unique<PrintingTokenVisitor>(os);
 
-  lexer.tokenize(visitor);
+  JsonLexer lexer(json);
+  lexer.tokenize(*visitor);
 
   return os;
 }

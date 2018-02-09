@@ -30,7 +30,7 @@ constexpr const char* newline = "\n";
 #endif
 
 
-std::ostream& pretty_print_json(std::ostream& os, const std::string& json);
+std::ostream& pretty_print_json(std::ostream& os, const std::string& json, bool use_ansi_colors = false);
 
 } // jwt
 
