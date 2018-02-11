@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <exception>
+#include <stdexcept>
 #include <string>
 
 namespace jwt {
