@@ -5,16 +5,13 @@ pull_requests:
 
 image: Visual Studio 2017
 
-init:
-  - cmd: call "C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Auxiliary\Build\vcvars64.bat"
-
-install:
-  - cmd: >-
-      mkdir c:\projects\jwt_dump\build
-      cd c:\projects\jwt_dump\build
+before_build:
+  - call "C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Auxiliary\Build\vcvars64.bat"
+  - cd C:\projects\jwt_dump
 
 build_script:
-  - cmd: >-
-      cmake -G "NMake Makefiles" ..
-      nmake
-      nmake test
+  - mkdir build
+  - cd build
+  - cmake -G "NMake Makefiles" ..
+  - nmake
+  - nmake test
