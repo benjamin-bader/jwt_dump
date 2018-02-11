@@ -15,23 +15,29 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef JWT_JSON_H
-#define JWT_JSON_H
+#ifndef JWT_LIB_JWT_H
+#define JWT_LIB_JWT_H
 
-#include <iosfwd>
 #include <string>
 
 namespace jwt {
 
-#if defined(_WIN32) || defined(WIN32)
-constexpr const char* newline = "\r\n";
-#else
-constexpr const char* newline = "\n";
-#endif
+class Jwt
+{
+public:
+  Jwt(const std::string& encoded);
+  Jwt(const std::string& header, const std::string& payload, const std::string& signature);
 
+  const std::string& header() const { return header_; }
+  const std::string& payload() const { return payload_; }
+  const std::string& signature() const { return signature_; }
 
-std::ostream& pretty_print_json(std::ostream& os, const std::string& json, bool use_ansi_colors = false);
+private:
+  std::string header_;
+  std::string payload_;
+  std::string signature_;
+};
 
-} // jwt
+}
 
-#endif // JWT_JSON_H
+#endif // JWT_LIB_JWT_H

@@ -17,54 +17,72 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 #include "testjson.h"
 
+#include <algorithm>
+#include <iostream>
 #include <sstream>
 #include <string>
+#include <vector>
 
 #include "gtest/gtest.h"
 
-#include "json.h"
+#include "config.h"
+#include "JsonLexer.h"
+#include "JsonPrinter.h"
 
 namespace {
 
-void assert_format_equals(const std::string& input, const std::string& expected)
+void assert_format_equals(const std::string& input, const std::vector<std::string>& expected)
 {
+  std::stringstream expectedStream;
+  bool appended = false;
+  for (auto&& line : expected)
+  {
+    if (appended)
+    {
+      expectedStream << newline;
+    }
+    expectedStream << line;
+    appended = true;
+  }
+  
   std::stringstream ss;
   jwt::pretty_print_json(ss, input);
 
-  EXPECT_EQ(expected, ss.str());
+  EXPECT_EQ(expectedStream.str(), ss.str());
 }
 
-}
+} // anonymous namespace
 
 TEST(JsonTest, FormatSimpleObject)
 {
   std::string input = R"({"hello": "world"})";
-  std::string expected = R"({
-  "hello": "world"
-})";
-
-  assert_format_equals(input, expected);
+  
+  assert_format_equals(input, {
+    "{",
+    "  \"hello\": \"world\"",
+    "}"
+  });
 }
 
 TEST(JsonTest, FormatTopLevelString)
 {
   std::string input = R"("this is some \"text\".")";
   std::string expected = input;
-  assert_format_equals(input, expected);
+  assert_format_equals(input, { expected });
 }
 
 TEST(JsonTest, FormatTopLevelNumber)
 {
   std::string input = "-3.14159e+15";
   std::string expected = input;
-  assert_format_equals(input, expected);
+  assert_format_equals(input, { expected });
 }
 
 TEST(JsonTest, FormatShortTopLevelNumber)
 {
   std::string input = "2";
   std::string expected = input;
-  assert_format_equals(input, expected);
+  assert_format_equals(input, { expected });
 }
 
 TEST(JsonTest, FormatEmptyArray)

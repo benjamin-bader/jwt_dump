@@ -22,10 +22,12 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <sstream>
 #include <string>
 
-#include "json.h"
-#include "jwt.h"
+#include "config.h"
+#include "InputError.h"
+#include "JsonPrinter.h"
+#include "Jwt.h"
 
-#if defined(_WIN32) || defined(WIN32)
+#if defined(JWT_OS_WIN)
 #  include <io.h>
 #  define isatty(x) _isatty(x)
 #  define STDIN_FILENO 0
@@ -33,6 +35,20 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #else
 #  include <unistd.h>
 #endif
+
+class UsageError : public std::runtime_error
+{
+public:
+  UsageError(const std::string& what) : std::runtime_error(what)
+  {}
+};
+
+class InvalidOptionError : public UsageError
+{
+public:
+  InvalidOptionError(const char* opt) : UsageError(std::string{"Unrecognized option: "} + std::string{opt})
+  {}
+};
 
 void usage()
 {
@@ -55,100 +71,167 @@ void usage()
   }
 }
 
-int main(int argc, char** argv)
+class Program
 {
-  std::string encoded_jwt;
-  bool default_display_mode = true;
-  bool show_header = false;
-  bool show_payload = false;
+public:
+  Program(int argc, char** argv);
+
+  void run();
+
+private:
+  void print_header(const jwt::Jwt& token) const;
+  void print_payload(const jwt::Jwt& token) const;
+  void print_everything(const jwt::Jwt& token) const;
+  void print_raw_json() const;
+
+private:
+  std::string input;
+  bool use_ansi_colors;
+
+  enum ProgramMode {
+    modeDefault = 0,
+    modeHeader = 1,
+    modePayload = 2,
+    modeRawJson = 4
+  } mode;
+};
+
+Program::Program(int argc, char** argv)
+{
+  mode = modeDefault;
+
   for (int i = 1; i < argc; ++i)
   {
     char* opt = argv[i];
     if (strcmp("-h", opt) == 0 || strcmp("--help", opt) == 0)
     {
       usage();
-      return 0;
+      exit(0);
+      return;
     }
 
     if (strcmp("-H", opt) == 0 || strcmp("--print-header", opt) == 0)
     {
-      show_header = true;
-      default_display_mode = false;
+      mode = static_cast<ProgramMode>(mode | modeHeader);
       continue;
     }
 
     if (strcmp("-p", opt) == 0 || strcmp("--print-payload", opt) == 0)
     {
-      show_payload = true;
-      default_display_mode = false;
+      mode = static_cast<ProgramMode>(mode | modePayload);
       continue;
     }
 
-    // unrecognized option, or token?
+    if (strcmp("-r", opt) == 0)
+    {
+      mode = static_cast<ProgramMode>(mode | modeRawJson);
+      continue;
+    }
+
     if (i == argc - 1)
     {
-      encoded_jwt = std::string{opt};
+      input = std::string{opt};
     }
     else
     {
-      std::cerr << "Unrecognized option: " << opt << std::endl;
-      usage();
-      return -1;
+      throw InvalidOptionError(opt);
     }
   }
 
-  if (encoded_jwt.empty())
+  if (input.empty() && !isatty(STDIN_FILENO))
   {
-    if (isatty(STDIN_FILENO))
+    std::stringstream ss;
+    std::string line;
+    while (std::getline(std::cin, line))
     {
-      // Interactive mode unsupported
-      std::cerr << "No token detected" << std::endl;
-      usage();
-      return 1;
+      ss << line << std::endl;
     }
 
-    if (!std::getline(std::cin, encoded_jwt))
-    {
-      std::cerr << "wut" << std::endl;
-      return 1;
-    }
+    input = ss.str();
   }
 
-  bool use_ansi_colors = isatty(STDOUT_FILENO);
+  if (input.empty())
+  {
+    throw UsageError("No token detected");
+  }
+
+  use_ansi_colors = isatty(STDOUT_FILENO);
+}
+
+void Program::print_header(const jwt::Jwt& token) const
+{
+  jwt::pretty_print_json(std::cout, token.header(), use_ansi_colors);
+}
+
+void Program::print_payload(const jwt::Jwt& token) const
+{
+  jwt::pretty_print_json(std::cout, token.header(), use_ansi_colors);
+}
+
+void Program::print_everything(const jwt::Jwt& token) const
+{
+  std::cout << "Header: " << std::endl;
+  print_header(token);
+
+  std::cout << "Payload: " << std::endl;
+  print_payload(token);
+
+  std::cout << "Signature: " << std::endl << token.signature() << std::endl;
+}
+
+void Program::print_raw_json() const
+{
+  jwt::pretty_print_json(std::cout, input, use_ansi_colors);
+}
+
+void Program::run()
+{
+  if (mode & modeRawJson)
+  {
+    print_raw_json();
+    return;
+  }
+
+  jwt::Jwt token(input);
+
+  if (mode == modeDefault)
+  {
+    print_everything(token);
+    return;
+  }
+
+  if (mode & modeHeader)
+  {
+    print_header(token);
+  }
+
+  if (mode & modePayload)
+  {
+    if (mode & modeHeader)
+    {
+      std::cout << std::endl;
+    }
+    print_payload(token);
+  }
+}
+
+int main(int argc, char** argv)
+{
   try
   {
-    jwt::Jwt token(encoded_jwt);
-
-    if (default_display_mode)
-    {
-      std::cout << "Header: " << std::endl;
-      jwt::pretty_print_json(std::cout, token.header(), use_ansi_colors);
-      std::cout << std::endl;
-
-      std::cout << "Payload: " << std::endl;
-      jwt::pretty_print_json(std::cout, token.payload(), use_ansi_colors);
-      std::cout << std::endl;
-
-      std::cout << "Signature: " << std::endl << token.signature();
-    }
-    else
-    {
-      if (show_header)
-      {
-        jwt::pretty_print_json(std::cout, token.header(), use_ansi_colors);
-      }
-
-      if (show_payload)
-      {
-        if (show_header)
-        {
-          std::cout << std::endl;
-        }
-        jwt::pretty_print_json(std::cout, token.payload(), use_ansi_colors);
-      }
-    }
-    std::cout << std::endl; // flush
-    return 0;
+    Program program(argc, argv);
+    program.run();
+  }
+  catch (const UsageError& ex)
+  {
+    std::cerr << ex.what() << std::endl;
+    usage();
+    return 1;
+  }
+  catch (const jwt::InputError& ex)
+  {
+    std::cerr << ex.what() << std::endl;
+    return 1;
   }
   catch (const std::exception& ex)
   {

@@ -15,16 +15,11 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef JWT_BASE64_H
-#define JWT_BASE64_H
-
-#include <string>
+#include "InputError.h"
 
 namespace jwt {
 
-std::string base64_urlsafe_decode(const std::string& data);
-std::string base64_decode(const std::string& data);
+InputError::InputError(const std::string& what) : std::runtime_error(what)
+{}
 
 } // namespace jwt
-
-#endif // JWT_BASE64_H

@@ -1,7 +1,9 @@
 set(libjwt_SRCS
-  base64.cc
-  json.cc
-  jwt.cc)
+  Base64.cc
+  InputError.cc
+  JsonLexer.cc
+  JsonPrinter.cc
+  Jwt.cc)
 
 add_library(libjwt STATIC ${libjwt_SRCS})
 

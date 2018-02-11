@@ -15,32 +15,21 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef JWT_JWT_H
-#define JWT_JWT_H
+#ifndef JWT_LIB_INPUTERROR_H
+#define JWT_LIB_INPUTERROR_H
 
-#include <iostream>
+#pragma once
+
+#include <exception>
 #include <string>
 
 namespace jwt {
 
-class Jwt
-{
+class InputError : public std::runtime_error {
 public:
-  Jwt(const std::string& encoded);
-  Jwt(const std::string& header, const std::string& payload, const std::string& signature);
-
-  const std::string& header() const { return header_; }
-  const std::string& payload() const { return payload_; }
-  const std::string& signature() const { return signature_; }
-
-  void dump(std::ostream& os);
-
-private:
-  std::string header_;
-  std::string payload_;
-  std::string signature_;
+	InputError(const std::string& what);
 };
 
-}
+} // namespace jwt
 
-#endif // JWT_JWT_H
+#endif // JWT_LIB_INPUTERROR_H

@@ -15,25 +15,20 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#include "jwt.h"
+#include "Jwt.h"
 
 #include <algorithm>
-#include <cassert>
-#include <cctype>
 #include <iostream>
 #include <iterator>
 #include <sstream>
-#include <stack>
 #include <vector>
 
-#include "base64.h"
-#include "json.h"
+#include "Base64.h"
+#include "InputError.h"
 
 namespace jwt {
 
 namespace {
-
-
 
 template <typename Out>
 void split(const std::string& str, char delimiter, Out&& result)
@@ -53,16 +48,6 @@ std::vector<std::string> split(const std::string& str, char delimiter)
   return result;
 }
 
-constexpr const char* indent = "  ";
-
-inline void do_indent(std::ostream& os, int level)
-{
-  for (int i = 0; i < level; ++i)
-  {
-    os << indent;
-  }
-}
-
 std::string trim(const std::string& text)
 {
   auto begin = text.find_first_not_of(" \t");
@@ -80,14 +65,14 @@ std::string trim(const std::string& text)
 
 Jwt::Jwt(const std::string& encoded)
 {
-  std::vector<std::string> parts = split(encoded, '.');
+  std::vector<std::string> parts = split(trim(encoded), '.');
   if (parts.size() != 2 && parts.size() != 3)
   {
-    throw std::runtime_error{"expected two or three segments delimited with a '.'"};
+    throw InputError{"expected two or three segments delimited with a '.'"};
   }
 
-  auto encoded_header = trim(parts[0]);
-  auto encoded_payload = trim(parts[1]);
+  auto encoded_header = parts[0];
+  auto encoded_payload = parts[1];
 
   header_ = encoded_header.size() != 0 ? base64_urlsafe_decode(encoded_header) : ""; 
   payload_ = encoded_payload.size() != 0 ? base64_urlsafe_decode(encoded_payload) : "";
@@ -96,42 +81,6 @@ Jwt::Jwt(const std::string& encoded)
     auto encoded_signature = trim(parts[2]);
     signature_ = encoded_signature; // no need to decode this, it's binary data
   }
-}
-
-void Jwt::dump(std::ostream& os)
-{
-  os << "Header: ";
-  if (header_.size() > 0)
-  {
-    pretty_print_json(os, header_);
-  }
-  else
-  {
-    os << "{}";
-  }
-  os << newline;
-
-  os << "Payload: ";
-  if (payload_.size() > 0)
-  {
-    pretty_print_json(os, payload_);
-  }
-  else
-  {
-    os << "{}";
-  }
-  os << newline;
-
-  os << "Signature: ";
-  if (signature_.size() > 0)
-  {
-    os << signature_;
-  }
-  else
-  {
-    os << "<empty>";
-  }
-  os << newline;
 }
 
 }

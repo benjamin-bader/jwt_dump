@@ -12,6 +12,8 @@
 #ifndef TERMCOLOR_HPP_
 #define TERMCOLOR_HPP_
 
+#pragma once
+
 // the following snippet of code detects the current OS and
 // defines the appropriate macro that is used to wrap some
 // platform specific things
@@ -246,6 +248,22 @@ namespace termcolor
         {
         #if defined(TERMCOLOR_OS_MACOS) || defined(TERMCOLOR_OS_LINUX)
             stream << "\033[34m";
+        #elif defined(TERMCOLOR_OS_WINDOWS)
+            _internal::win_change_attributes(stream,
+                FOREGROUND_BLUE
+            );
+        #endif
+        }
+        return stream;
+    }
+
+    inline
+    std::ostream& blue_light(std::ostream& stream)
+    {
+        if (_internal::is_colorized(stream))
+        {
+        #if defined(TERMCOLOR_OS_MACOS) || defined(TERMCOLOR_OS_LINUX)
+            stream << "\033[34;1m";
         #elif defined(TERMCOLOR_OS_WINDOWS)
             _internal::win_change_attributes(stream,
                 FOREGROUND_BLUE
