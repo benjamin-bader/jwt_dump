@@ -17,9 +17,11 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 #include <cstdio>
 #include <cstdlib>
+#include <cstring>
 #include <exception>
 #include <iostream>
 #include <sstream>
+#include <stdexcept>
 #include <string>
 
 #include "config.h"
