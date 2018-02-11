@@ -16,4 +16,4 @@ build_script:
   - cd build
   - cmake -G "NMake Makefiles" ..
   - nmake
-  - nmake test
+  - nmake /A test
