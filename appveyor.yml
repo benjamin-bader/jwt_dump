@@ -1,0 +1,20 @@
+version: '1.0.{build}'
+
+pull_requests:
+  do_not_increment_build_number: true
+
+image: Visual Studio 2017
+
+init:
+  - cmd: call "C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Auxiliary\Build\vcvars64.bat"
+
+install:
+  - cmd: >-
+      mkdir c:\projects\jwt_dump\build
+      cd c:\projects\jwt_dump\build
+
+build_script:
+  - cmd: >-
+      cmake -G "NMake Makefiles" ..
+      nmake
+      nmake test
