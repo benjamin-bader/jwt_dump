@@ -88,6 +88,19 @@ TEST(JsonTest, FormatShortTopLevelNumber)
 TEST(JsonTest, FormatEmptyArray)
 {
   std::string input = "[]";
-  std::string expected = "[\n]";
-  //assert_format_equals(input, expected);
+  assert_format_equals(input, {
+    "[",
+    "  ",
+    "]"
+  });
+}
+
+TEST(JsonTest, FormatEmptyObject)
+{
+  std::string input = "{}";
+  assert_format_equals(input, {
+    "{",
+    "  ",
+    "}"
+  });
 }
