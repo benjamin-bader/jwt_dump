@@ -174,11 +174,15 @@ void Program::print_everything(const jwt::Jwt& token) const
 {
   std::cout << "Header: " << std::endl;
   print_header(token);
+  std::cout << std::endl;
 
   std::cout << "Payload: " << std::endl;
   print_payload(token);
+  std::cout << std::endl;
 
-  std::cout << "Signature: " << std::endl << token.signature() << std::endl;
+  std::cout << "Signature: " << std::endl;
+  std::cout << token.signature();
+  std::cout << std::endl;
 }
 
 void Program::print_raw_json() const
