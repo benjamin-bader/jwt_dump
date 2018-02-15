@@ -26,6 +26,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include "gtest/gtest.h"
 
 #include "config.h"
+#include "InputError.h"
 #include "JsonLexer.h"
 #include "JsonPrinter.h"
 
@@ -49,6 +50,12 @@ void assert_format_equals(const std::string& input, const std::vector<std::strin
   jwt::pretty_print_json(ss, input);
 
   EXPECT_EQ(expectedStream.str(), ss.str());
+}
+
+void assert_invalid(const std::string& input)
+{
+  std::stringstream ss;
+  EXPECT_THROW(jwt::pretty_print_json(ss, input), jwt::InputError);
 }
 
 } // anonymous namespace
@@ -103,4 +110,27 @@ TEST(JsonTest, FormatEmptyObject)
     "  ",
     "}"
   });
+}
+
+TEST(JsonTest, numberz)
+{
+  assert_format_equals("3.14159", {"3.14159"});
+  assert_format_equals("1", {"1"});
+  assert_format_equals(".123", {".123"});
+  assert_format_equals("0.123", {"0.123"});
+  assert_format_equals("1e10", {"1e10"});
+  assert_format_equals("1e+10", {"1e+10"});
+  assert_format_equals("1e-10", {"1e-10"});
+  assert_format_equals("-123", {"-123"});
+  assert_format_equals("+123", {"+123"});
+
+  assert_invalid("123.e10");
+  assert_invalid("--123");
+  assert_invalid("-");
+  assert_invalid("+");
+  assert_invalid(".");
+  assert_invalid("e10");
+  assert_invalid(".e10");
+  assert_invalid("++10");
+  assert_invalid("123ee10");
 }

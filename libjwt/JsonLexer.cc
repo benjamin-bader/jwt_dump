@@ -202,7 +202,7 @@ bool JsonLexer::next_token(Token& token) noexcept
       return read_literal_token(token, tokenStart, "false");
 
     default:
-      if (isdigit(c) || c == '+' || c == '-')
+      if (isdigit(c) || c == '+' || c == '-' || c == '.')
       {
         return read_number_token(token, tokenStart);
       }
@@ -239,22 +239,178 @@ bool JsonLexer::read_string_token(Token& token, size_t begin) noexcept
   return false;
 }
 
+static enum number_state {
+  jnStart                          = 0,
+  jnIntegral                       = 1,
+  jnIntegralAfterSign              = 2,
+  jnFractionalOneDigitRequired     = 3,
+  jnFractional                     = 4,
+  jnExponentOrSign                 = 5,
+  jnExponent                       = 6,
+  jnComplete                       = 7
+};
+
+static constexpr bool is_terminal(number_state state)
+{
+  switch (state)
+  {
+    case jnIntegral:
+    case jnFractional:
+    case jnExponent:
+    case jnComplete:
+      return true;
+
+    default:
+      return false;
+  }
+}
+
 bool JsonLexer::read_number_token(Token& token, size_t tokenStart) noexcept
 {
-  // we _definitely_ don't care about validating correct floating-point here, just that
-  // it _might_ be a number.
-  size_t i = ix_;
-  while (i < end_)
-  {
-    char c = char_at(i);
-    if (isdigit(c) || c == '.' || c == 'e' || c == 'E' || c == '-' || c == '+')
-    {
-      i++;
-      continue;
-    }
+  number_state state = jnStart;
 
-    break;
+  size_t i = tokenStart;
+  while (state != jnComplete && i < end_)
+  {
+    char c = char_at(i++);
+    std::cerr << "read char: " << c << " in state: " << state << std::endl;
+    switch (state)
+    {
+      case jnStart:
+        if (isdigit(c))
+        {
+          state = jnIntegral;
+        }
+        else if (c == '.')
+        {
+          state = jnFractionalOneDigitRequired;
+        }
+        else if (c == '+' || c == '-')
+        {
+          state = jnIntegralAfterSign;
+        }
+        else
+        {
+          // error
+          std::cerr << "Illegal char for state jnStart: " << c << std::endl;
+          return false;
+        }
+        break;
+
+      case jnIntegral:
+        if (is_blank(c) || i == end_)
+        {
+          state = jnComplete;
+        }
+        else if (isdigit(c))
+        {
+          break;
+        }
+        else if (c == '.')
+        {
+          state = jnFractionalOneDigitRequired;
+        }
+        else if (c == 'e' || c == 'E')
+        {
+          state = jnExponentOrSign;
+        }
+        else
+        {
+          std::cerr << "Illegal char for state jnIntegral: " << c << std::endl;
+          return false;
+        }
+        break;
+
+      case jnIntegralAfterSign:
+        if (isdigit(c))
+        {
+          state = jnIntegral;
+        }
+        else if (c == '.')
+        {
+          state = jnFractionalOneDigitRequired;
+        }
+        else
+        {
+          std::cerr << "Illegal char for state jnFractionalOneDigitRequired: " << c << std::endl;
+          return false;
+        }
+        break;
+
+      case jnFractionalOneDigitRequired:
+        if (isdigit(c))
+        {
+          state = jnFractional;
+        }
+        else
+        {
+          std::cerr << "Illegal char for state jnFractionalOneDigitRequired: " << c << std::endl;
+          return false;
+        }
+        break;
+
+      case jnFractional:
+        if (is_blank(c) || i == end_ - 1)
+        {
+          state = jnComplete;
+        }
+        else if (isdigit(c))
+        {
+          break;
+        }
+        else if (c == 'e' || c == 'E')
+        {
+          state = jnExponentOrSign;
+        }
+        else
+        {
+          std::cerr << "Illegal char for state jnFractional: " << c << std::endl;
+          return false;
+        }
+        break;
+
+      case jnExponentOrSign:
+        if (isdigit(c) || c == '+' || c == '-')
+        {
+          state = jnExponent;
+        }
+        else
+        {
+          std::cerr << "Illegal char for state jnExponentOrSign: " << c << std::endl;
+          return false;
+        }
+        break;
+
+      case jnExponent:
+        if (is_blank(c) || i == end_)
+        {
+          state = jnComplete;
+        }
+        else if (isdigit(c))
+        {
+          break;
+        }
+        else
+        {
+          std::cerr << "Illegal char for state jnExponent: " << c << std::endl;
+          return false;
+        }
+        break;
+
+      default:
+        assert(false);
+        return false;
+    }
   }
+
+  if (! is_terminal(state))
+  {
+    std::cerr << "finished at non-terminal state: " << state << std::endl;
+    --ix_;
+    return false;
+  }
+
+  std::cerr << "Reached terminal state: " << state << std::endl;
 
   token.type = TokenType::Number;
   token.begin = tokenStart;

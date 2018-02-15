@@ -3,6 +3,8 @@ set(libjwt_SRCS
   InputError.cc
   JsonLexer.cc
   JsonPrinter.cc
+  JsonReader.cc
+  JsonWebKey.cc
   Jwt.cc)
 
 add_library(libjwt STATIC ${libjwt_SRCS})

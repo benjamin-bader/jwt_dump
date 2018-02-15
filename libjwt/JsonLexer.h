@@ -80,11 +80,14 @@ class JsonLexer
 {
 public:
   JsonLexer(const std::string& text);
+  JsonLexer(const JsonLexer&) = default;
+  JsonLexer(JsonLexer&&) noexcept = default;
 
   void tokenize(ITokenVisitor& visitor);
 
-private:
   bool next_token(Token& token) noexcept;
+
+private:
   bool read_string_token(Token& token, size_t begin) noexcept;
   bool read_number_token(Token& token, size_t tokenStart) noexcept;
   bool read_literal_token(Token& token, size_t tokenStart, const char* expected) noexcept;
