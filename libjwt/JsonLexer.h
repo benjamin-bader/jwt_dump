@@ -99,7 +99,7 @@ private:
   bool is_eof() const noexcept;
 
 private:
-  const std::string& text_;
+  const std::string text_;
   size_t ix_;
   size_t end_;
 };

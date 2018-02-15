@@ -25,7 +25,8 @@ class JsonReader
 {
 public:
   JsonReader(const std::string& json);
-  JsonReader(JsonLexer&& lexer);
+  JsonReader(const JsonReader& reader) noexcept;
+  JsonReader(JsonReader&& reader) noexcept;
 
   void begin_object();
   void end_object();

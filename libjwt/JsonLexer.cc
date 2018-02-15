@@ -54,7 +54,7 @@ std::ostream& operator<<(std::ostream& os, const Token& token)
 
 namespace {
 
-inline bool is_blank(char c) noexcept
+inline constexpr bool is_blank(char c) noexcept
 {
   return c == ' ' || c == '\t' || c == '\n' || c == '\r';
 }
@@ -239,7 +239,7 @@ bool JsonLexer::read_string_token(Token& token, size_t begin) noexcept
   return false;
 }
 
-static enum number_state {
+enum number_state {
   jnStart                          = 0,
   jnIntegral                       = 1,
   jnIntegralAfterSign              = 2,
@@ -273,7 +273,6 @@ bool JsonLexer::read_number_token(Token& token, size_t tokenStart) noexcept
   while (state != jnComplete && i < end_)
   {
     char c = char_at(i++);
-    std::cerr << "read char: " << c << " in state: " << state << std::endl;
     switch (state)
     {
       case jnStart:
@@ -405,12 +404,9 @@ bool JsonLexer::read_number_token(Token& token, size_t tokenStart) noexcept
 
   if (! is_terminal(state))
   {
-    std::cerr << "finished at non-terminal state: " << state << std::endl;
     --ix_;
     return false;
   }
-
-  std::cerr << "Reached terminal state: " << state << std::endl;
 
   token.type = TokenType::Number;
   token.begin = tokenStart;

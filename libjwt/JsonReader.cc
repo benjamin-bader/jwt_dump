@@ -165,16 +165,25 @@ static inline std::string unescape_string_token(const Token& token)
 }
 
 JsonReader::JsonReader(const std::string& json)
-    : JsonReader(std::move(JsonLexer{json}))
-{
-}
-
-JsonReader::JsonReader(JsonLexer&& lexer)
-    : lexer(std::move(lexer))
+    : lexer(json)
     , peeked()
     , scopes({ ReadScope::TopLevel })
 {
   clear_peeked();
+}
+
+JsonReader::JsonReader(const JsonReader& reader) noexcept
+    : lexer(reader.lexer)
+    , peeked(reader.peeked)
+    , scopes(reader.scopes)
+{
+}
+
+JsonReader::JsonReader(JsonReader&& reader) noexcept
+    : lexer(std::move(reader.lexer))
+    , peeked(std::move(reader.peeked))
+    , scopes(std::move(reader.scopes))
+{
 }
 
 void JsonReader::begin_object()
@@ -248,7 +257,6 @@ std::string JsonReader::next_string()
 
   if (peeked.type != TokenType::String)
   {
-    std::cerr << "token type: " << peeked.type << std::endl;
     throw InputError("Expected a string");
   }
 
