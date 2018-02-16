@@ -154,6 +154,42 @@ TEST(JsonReaderTest, has_more_is_true_at_start_of_nonempty_object)
   reader.end_object();
 }
 
+TEST(JsonReaderTest, object_with_all_kinds_of_values)
+{
+  JsonReader reader(R"({
+    "str": "a string",
+    "num": 3.14159,
+    "null": null,
+    "arr": [ 1, 2, 3 ],
+    "true": true,
+    "false": false
+  })");
+
+  reader.begin_object();
+  EXPECT_EQ("str", reader.next_name());
+  EXPECT_EQ("a string", reader.next_string());
+
+  EXPECT_EQ("num", reader.next_name());
+  EXPECT_EQ(3.14159, reader.next_double());
+
+  EXPECT_EQ("null", reader.next_name());
+  reader.next_null();
+
+  EXPECT_EQ("arr", reader.next_name());
+  reader.begin_array();
+  EXPECT_EQ(1, reader.next_i64());
+  EXPECT_EQ(2, reader.next_i64());
+  EXPECT_EQ(3, reader.next_i64());
+  reader.end_array();
+
+  EXPECT_EQ("true", reader.next_name());
+  EXPECT_EQ(true, reader.next_bool());
+
+  EXPECT_EQ("false", reader.next_name());
+  EXPECT_EQ(false, reader.next_bool());
+  reader.end_object();
+}
+
 TEST(JsonReaderTest, empty_array)
 {
   std::string orig = "[]";

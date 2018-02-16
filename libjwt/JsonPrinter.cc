@@ -395,12 +395,17 @@ private:
 
 std::ostream& pretty_print_json(std::ostream& os, const std::string& json, bool use_ansi_colors)
 {
-  std::unique_ptr<ITokenVisitor> visitor = use_ansi_colors
-      ? std::make_unique<AnsiPrintingTokenVisitor>(os)
-      : std::make_unique<PrintingTokenVisitor>(os);
-
   JsonLexer lexer(json);
-  lexer.tokenize(*visitor);
+  if (use_ansi_colors)
+  {
+    AnsiPrintingTokenVisitor visitor(os);
+    lexer.tokenize(visitor);
+  }
+  else
+  {
+    PrintingTokenVisitor visitor(os);
+    lexer.tokenize(visitor);
+  }
 
   return os;
 }

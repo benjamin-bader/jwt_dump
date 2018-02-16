@@ -25,22 +25,34 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 namespace jwt {
 
-std::ostream& operator<<(std::ostream& os, TokenType type)
+constexpr const char* name_of_token_type(TokenType type)
 {
   switch (type)
   {
-    case TokenType::ObjectStart: return os << "TokenType::ObjectStart";
-    case TokenType::ObjectEnd: return os << "TokenType::ObjectEnd";
-    case TokenType::ArrayStart: return os << "TokenType::ArrayStart";
-    case TokenType::ArrayEnd: return os << "TokenType::ArrayEnd";
-    case TokenType::Colon: return os << "TokenType::Colon";
-    case TokenType::Comma: return os << "TokenType::Comma";
-    case TokenType::String: return os << "TokenType::String";
-    case TokenType::Number: return os << "TokenType::Number";
-    case TokenType::Literal: return os << "TokenType::Literal";
+    case TokenType::ObjectStart: return "TokenType::ObjectStart";
+    case TokenType::ObjectEnd:   return "TokenType::ObjectEnd";
+    case TokenType::ArrayStart:  return "TokenType::ArrayStart";
+    case TokenType::ArrayEnd:    return "TokenType::ArrayEnd";
+    case TokenType::Colon:       return "TokenType::Colon";
+    case TokenType::Comma:       return "TokenType::Comma";
+    case TokenType::String:      return "TokenType::String";
+    case TokenType::Number:      return "TokenType::Number";
+    case TokenType::Literal:     return "TokenType::Literal";
     default:
-      assert(false);
-      return os << "Unexpected token type (" << static_cast<int>(type) << ")";
+      return nullptr;
+  }
+}
+
+std::ostream& operator<<(std::ostream& os, TokenType type)
+{
+  const char* name = name_of_token_type(type);
+  if (name != nullptr)
+  {
+    return os << name;
+  }
+  else
+  {
+    return os << "Unexpected token type (" << static_cast<int>(type) << ")";
   }
 }
 
@@ -65,6 +77,18 @@ JsonLexer::JsonLexer(const std::string& text)
     : text_(text)
     , ix_(0)
     , end_(text.size())
+{}
+
+JsonLexer::JsonLexer(const JsonLexer& lexer) noexcept
+    : text_(lexer.text_)
+    , ix_(lexer.ix_)
+    , end_(lexer.end_)
+{}
+
+JsonLexer::JsonLexer(JsonLexer&& lexer) noexcept
+    : text_(std::move(lexer.text_))
+    , ix_(lexer.ix_)
+    , end_(lexer.end_)
 {}
 
 void JsonLexer::tokenize(ITokenVisitor& visitor)
@@ -215,6 +239,9 @@ bool JsonLexer::next_token(Token& token) noexcept
 
 bool JsonLexer::read_string_token(Token& token, size_t begin) noexcept
 {
+  assert(begin == ix_ - 1);
+  assert(text_[begin] == '"');
+
   for (size_t i = ix_; i < end_; ++i)
   {
     char c = char_at(i);
@@ -239,7 +266,7 @@ bool JsonLexer::read_string_token(Token& token, size_t begin) noexcept
   return false;
 }
 
-enum number_state {
+enum NumberState {
   jnStart                          = 0,
   jnIntegral                       = 1,
   jnIntegralAfterSign              = 2,
@@ -250,7 +277,7 @@ enum number_state {
   jnComplete                       = 7
 };
 
-static constexpr bool is_terminal(number_state state)
+static constexpr bool is_terminal(NumberState state)
 {
   switch (state)
   {
@@ -267,7 +294,10 @@ static constexpr bool is_terminal(number_state state)
 
 bool JsonLexer::read_number_token(Token& token, size_t tokenStart) noexcept
 {
-  number_state state = jnStart;
+  assert(tokenStart == ix_ - 1);
+  assert(isdigit(text_[tokenStart]) || text_[tokenStart] == '+' || text_[tokenStart] == '-' || text_[tokenStart] == '.');
+
+  NumberState state = jnStart;
 
   size_t i = tokenStart;
   while (state != jnComplete && i < end_)
@@ -297,7 +327,7 @@ bool JsonLexer::read_number_token(Token& token, size_t tokenStart) noexcept
         break;
 
       case jnIntegral:
-        if (is_blank(c) || i == end_)
+        if (is_blank(c) || c == ',' || c == ']' || c == '}' || i == end_)
         {
           state = jnComplete;
         }
@@ -349,7 +379,7 @@ bool JsonLexer::read_number_token(Token& token, size_t tokenStart) noexcept
         break;
 
       case jnFractional:
-        if (is_blank(c) || i == end_ - 1)
+        if (is_blank(c) || c == ',' || c == ']' || c == '}' || i == end_ - 1)
         {
           state = jnComplete;
         }
@@ -381,7 +411,7 @@ bool JsonLexer::read_number_token(Token& token, size_t tokenStart) noexcept
         break;
 
       case jnExponent:
-        if (is_blank(c) || i == end_)
+        if (is_blank(c) || c == ',' || c == ']' || c == '}' || i == end_)
         {
           state = jnComplete;
         }
@@ -404,8 +434,18 @@ bool JsonLexer::read_number_token(Token& token, size_t tokenStart) noexcept
 
   if (! is_terminal(state))
   {
+    // We've hit EOF, but have an invalid number.  If it so happens that the invalid number
+    // is one character long (e.g. '-', '.', etc), then we need to make sure that we 'un-get'
+    // that character, or else the caller will not recognize the erroneous token.
     --ix_;
     return false;
+  }
+
+  if (state == jnComplete)
+  {
+    // We've halted on a separator character; "un-get" it.
+    assert(i < end_);
+    --i;
   }
 
   token.type = TokenType::Number;
@@ -421,7 +461,9 @@ bool JsonLexer::read_literal_token(Token& token, size_t tokenStart, const char* 
   const char* ptr = expected + 1; // first char is already matched
   size_t i = ix_;
 
-  assert(*expected == text_[ix_ - 1]);
+  assert(expected != nullptr);
+  assert(tokenStart == ix_ - 1);
+  assert(*expected == text_[tokenStart]);
 
   while (*ptr && i < end_)
   {

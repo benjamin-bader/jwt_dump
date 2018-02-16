@@ -80,8 +80,8 @@ class JsonLexer
 {
 public:
   JsonLexer(const std::string& text);
-  JsonLexer(const JsonLexer&) = default;
-  JsonLexer(JsonLexer&&) noexcept = default;
+  JsonLexer(const JsonLexer&) noexcept;
+  JsonLexer(JsonLexer&&) noexcept;
 
   void tokenize(ITokenVisitor& visitor);
 

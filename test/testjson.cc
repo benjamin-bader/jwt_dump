@@ -112,6 +112,20 @@ TEST(JsonTest, FormatEmptyObject)
   });
 }
 
+TEST(JsonTest, format_nested_object)
+{
+  std::string input = R"({ "o1":{"o2":{}}})";
+  assert_format_equals(input, {
+    "{",
+    "  \"o1\": {",
+    "    \"o2\": {",
+    "      ",
+    "    }",
+    "  }",
+    "}"
+  });
+}
+
 TEST(JsonTest, numberz)
 {
   assert_format_equals("3.14159", {"3.14159"});

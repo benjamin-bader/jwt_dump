@@ -1,6 +1,25 @@
+/*
+Copyright (C) 2018 Benjamin Bader
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <https://www.gnu.org/licenses/>.
+*/
+
 #include "JsonReader.h"
 
 #include <cassert>
+#include <cerrno>
+#include <cstdlib>
 #include <cstring>
 #include <iostream>
 #include <stdexcept>
@@ -176,15 +195,13 @@ JsonReader::JsonReader(const JsonReader& reader) noexcept
     : lexer(reader.lexer)
     , peeked(reader.peeked)
     , scopes(reader.scopes)
-{
-}
+{}
 
 JsonReader::JsonReader(JsonReader&& reader) noexcept
     : lexer(std::move(reader.lexer))
     , peeked(std::move(reader.peeked))
     , scopes(std::move(reader.scopes))
-{
-}
+{}
 
 void JsonReader::begin_object()
 {
@@ -287,9 +304,39 @@ bool JsonReader::next_bool()
 
 int64_t JsonReader::next_i64()
 {
-  expect_token(TokenType::Number);
+  double num = next_double();
 
-  return 0;
+  return static_cast<int64_t>(num);
+}
+
+double JsonReader::next_double()
+{
+  expect_token(TokenType::Number);
+  
+  const char* start = peeked.text;
+  char* end;
+
+  std::cerr << "parsed double=" << std::string{peeked.text, peeked.end - peeked.begin} << std::endl;
+
+  errno = 0;
+  double result = ::strtod(start, &end);
+  if (errno)
+  {
+    throw InputError(::strerror(errno));
+  }
+
+  consume();
+  return result;
+}
+
+void JsonReader::next_null()
+{
+  expect_token(TokenType::Literal);
+  if (std::strncmp(peeked.text, "null", peeked.end - peeked.begin) != 0)
+  {
+    throw InputError(std::string{"Expected null; got: "} + std::string{peeked.text, peeked.end - peeked.begin});
+  }
+  consume();
 }
 
 void JsonReader::expect_token(TokenType type)
@@ -383,6 +430,7 @@ bool JsonReader::peek()
       }
       else if (peeked.type != TokenType::Comma)
       {
+        std::cerr << "peeked type=" << peeked.type << std::endl;
         throw std::runtime_error("invalid json");
       }
 
