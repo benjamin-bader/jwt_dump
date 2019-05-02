@@ -19,6 +19,10 @@ def jd_copts(custom_opts = []):
   return custom_opts + select({
     "@bazel_tools//src/conditions:darwin": darwin_opts,
     "@bazel_tools//src/conditions:windows": msvc_opts,
+    "@bazel_tools//src/conditions:linux_x86_64": posix_opts,
+    "@bazel_tools//src/conditions:linux_aarch64": posix_opts,
+    "@bazel_tools//src/conditions:freebsd": posix_opts,
+    "//conditions:default": posix_opts,
   })
 
 def jd_linkopts(custom_linkopts):
