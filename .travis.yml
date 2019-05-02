@@ -8,8 +8,11 @@ before_install:
 install:
   - sudo apt-get install -qq g++-6
   - sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-6 90
+  - sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-6 90
+  - sudo apt-get install pkg-config zip zlib1g-dev unzip python
+  - wget https://github.com/bazelbuild/bazel/releases/download/0.25.0/bazel-0.25.0-installer-linux-x86_64.sh
+  - chmod +x bazel-0.25.0-installer-linux-x86_64.sh
+  - ./bazel-0.25.0-installer-linux-x86_64.sh --user
 script:
-  - mkdir build && cd build
-  - cmake ..
-  - make
-  - make test
+  - $HOME/bin/bazel build ...
+  - $HOME/bin/bazel --batch test ... --test_output=errors --noshow_progress

@@ -15,7 +15,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#include "Jwt.h"
+#include "libjwt/Jwt.h"
 
 #include <algorithm>
 #include <iostream>
@@ -23,8 +23,8 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <sstream>
 #include <vector>
 
-#include "Base64.h"
-#include "InputError.h"
+#include "libjwt/Base64.h"
+#include "libjwt/InputError.h"
 
 namespace jwt {
 

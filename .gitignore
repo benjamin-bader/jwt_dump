@@ -7,6 +7,9 @@ Testing
 gtest*
 gmock*
 jwt_dump
+.vscode
+
+bazel-*
 
 .DS_Store
 

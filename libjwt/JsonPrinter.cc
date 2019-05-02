@@ -15,19 +15,21 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#include "JsonPrinter.h"
+#include "libjwt/JsonPrinter.h"
 
 #include <algorithm>
 #include <cassert>
+#include <cstdint>
 #include <iostream>
 #include <memory>
 #include <sstream>
 #include <stack>
+#include <utility>
 
-#include "config.h"
-#include "InputError.h"
-#include "JsonLexer.h"
-#include "termcolor.hpp"
+#include "libjwt/config.h"
+#include "libjwt/InputError.h"
+#include "libjwt/JsonLexer.h"
+#include "libjwt/termcolor.hpp"
 
 namespace jwt {
 
@@ -279,7 +281,7 @@ private: // output functions
 
   void indent()
   {
-    for (int i = 0; i < contexts_.size(); ++i)
+    for (std::size_t i = 0; i < contexts_.size(); ++i)
     {
       os() << indent_unit;
     }
