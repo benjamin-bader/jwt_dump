@@ -19,6 +19,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 #include <algorithm>
 #include <cassert>
+#include <cstdint>
 #include <iostream>
 #include <memory>
 #include <sstream>
@@ -280,7 +281,7 @@ private: // output functions
 
   void indent()
   {
-    for (int i = 0; i < contexts_.size(); ++i)
+    for (std::size_t i = 0; i < contexts_.size(); ++i)
     {
       os() << indent_unit;
     }
