@@ -15,8 +15,6 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#include "testjson.h"
-
 #include <algorithm>
 #include <iostream>
 #include <sstream>
@@ -25,9 +23,9 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 #include "gtest/gtest.h"
 
-#include "config.h"
-#include "JsonLexer.h"
-#include "JsonPrinter.h"
+#include "libjwt/config.h"
+#include "libjwt/JsonLexer.h"
+#include "libjwt/JsonPrinter.h"
 
 namespace {
 

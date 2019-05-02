@@ -15,13 +15,13 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#include "JsonLexer.h"
+#include "libjwt/JsonLexer.h"
 
 #include <cassert>
 #include <iostream>
 #include <sstream>
 
-#include "InputError.h"
+#include "libjwt/InputError.h"
 
 namespace jwt {
 

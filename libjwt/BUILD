@@ -1,0 +1,76 @@
+load ("//bazel:jd.bzl", "jd_cc_library", "jd_cc_test")
+
+jd_cc_library(
+    name = "config",
+    srcs = [],
+    hdrs = ["config.h"],
+    deps = [],
+)
+
+jd_cc_library(
+    name = "base64",
+    srcs = ["Base64.cc"],
+    hdrs = ["Base64.h"],
+    deps = [],
+)
+
+jd_cc_library(
+    name = "input_error",
+    srcs = ["InputError.cc"],
+    hdrs = ["InputError.h"],
+    deps = [],
+)
+
+jd_cc_library(
+    name = "termcolor",
+    srcs = [],
+    hdrs = ["termcolor.hpp"],
+    deps = [],
+)
+
+jd_cc_library(
+    name = "json_lexer",
+    srcs = ["JsonLexer.cc"],
+    hdrs = ["JsonLexer.h"],
+    deps = [
+        ":input_error",
+    ],
+)
+
+jd_cc_library(
+    name = "json_printer",
+    srcs = ["JsonPrinter.cc"],
+    hdrs = ["JsonPrinter.h"],
+    deps = [
+        ":config",
+        ":input_error",
+        ":json_lexer",
+        ":termcolor",
+    ],
+)
+
+jd_cc_library(
+    name = "jwt",
+    srcs = ["Jwt.cc"],
+    hdrs = ["Jwt.h"],
+    deps = [
+        ":base64",
+        ":input_error",
+    ],
+)
+
+jd_cc_library(
+    name = "libjwt",
+    srcs = [],
+    hdrs = [],
+    deps = [
+        ":config",
+        ":input_error",
+        ":json_lexer",
+        ":json_printer",
+        ":jwt",
+    ],
+    visibility = [
+        "//visibility:public"
+    ]
+)

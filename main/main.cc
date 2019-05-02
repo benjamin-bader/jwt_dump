@@ -24,10 +24,10 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <stdexcept>
 #include <string>
 
-#include "config.h"
-#include "InputError.h"
-#include "JsonPrinter.h"
-#include "Jwt.h"
+#include "libjwt/config.h"
+#include "libjwt/InputError.h"
+#include "libjwt/JsonPrinter.h"
+#include "libjwt/Jwt.h"
 
 #if defined(JWT_OS_WIN)
 #  include <io.h>
@@ -167,7 +167,7 @@ void Program::print_header(const jwt::Jwt& token) const
 
 void Program::print_payload(const jwt::Jwt& token) const
 {
-  jwt::pretty_print_json(std::cout, token.header(), use_ansi_colors);
+  jwt::pretty_print_json(std::cout, token.payload(), use_ansi_colors);
 }
 
 void Program::print_everything(const jwt::Jwt& token) const
