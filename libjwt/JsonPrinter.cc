@@ -28,7 +28,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 #include "libjwt/config.h"
 #include "libjwt/InputError.h"
-#include "libjwt/JsonLexer.h"
+#include "libjwt/JsonVisitor.h"
 #include "libjwt/termcolor.hpp"
 
 namespace jwt {
@@ -37,223 +37,98 @@ namespace {
 
 constexpr const char* indent_unit = "  ";
 
-class IWriteContext
+class PrintingJsonVisitor : public IJsonVisitor
 {
 public:
-  virtual ~IWriteContext() = default;
-
-  virtual bool is_object() const = 0;
-  virtual bool can_write(TokenType type) const = 0;
-  virtual void on_written(TokenType type) = 0;
-
-  virtual bool is_expecting_object_key() const
-  {
-    return false;
-  }
-};
-
-class ObjectWriteContext : public IWriteContext
-{
-public:
-  ObjectWriteContext() : ows(owsExpectKey)
+  PrintingJsonVisitor(std::ostream& os)
+    : os_(os)
   {}
 
-  bool is_object() const override
+  virtual void on_object_start() override
   {
-    return true;
-  }
-
-  bool is_expecting_object_key() const override
-  {
-    return ows == owsExpectKey;
-  }
-
-  bool can_write(TokenType type) const override
-  {
-    switch (ows)
-    {
-      case owsExpectKey:              return type == TokenType::String || type == TokenType::ObjectEnd;
-      case owsExpectSeparator:        return type == TokenType::Colon;
-      case owsExpectValue:            return is_value_type(type);
-      case owsExpectElementSeparator: return type == TokenType::Comma || type == TokenType::ObjectEnd;
-      default:
-        assert(false);
-        return false;
-    }
-  }
-
-  void on_written(TokenType type) override
-  {
-    switch (ows)
-    {
-      case owsExpectKey:
-        assert(type == TokenType::String || type == TokenType::ObjectEnd);
-        if (type == TokenType::String)
-        {
-          ows = owsExpectSeparator;
-        }
-        // else the object is closed, and this context will go away presently.
-        break;
-
-      case owsExpectSeparator:
-        assert(type == TokenType::Colon);
-        ows = owsExpectValue;
-        break;
-
-      case owsExpectValue:
-        assert(is_value_type(type));
-        ows = owsExpectElementSeparator;
-        break;
-
-      case owsExpectElementSeparator:
-        assert(type == TokenType::Comma || type == TokenType::ObjectEnd);
-        ows = owsExpectKey;
-        break;
-
-      default:
-        assert(false);
-        break;
-    }
-  }
-
-private:
-  enum ObjectWriteState
-  {
-    owsExpectKey,
-    owsExpectSeparator,
-    owsExpectValue,
-    owsExpectElementSeparator
-  } ows;
-}; // class ObjectWriteContext
-
-
-class ArrayWriteContext : public IWriteContext
-{
-public:
-  ArrayWriteContext() : aws(awsExpectValue)
-  {}
-
-  bool is_object() const override
-  {
-    return false;
-  }
-
-  bool can_write(TokenType type) const override
-  {
-    if (aws == awsExpectValue)
-    {
-      return is_value_type(type) || type == TokenType::ArrayEnd;
-    }
-    else
-    {
-      return type == TokenType::Comma || type == TokenType::ArrayEnd;
-    }
-  }
-
-  void on_written(TokenType type) override
-  {
-    switch (aws)
-    {
-      case awsExpectValue:
-        assert(is_value_type(type) || type == TokenType::ArrayEnd);
-        if (type != TokenType::ArrayEnd)
-        {
-          aws = awsExpectSeparator;
-        } // else the array is done
-        break;
-      case awsExpectSeparator:
-        assert(type == TokenType::Comma || type == TokenType::ArrayEnd);
-        aws = awsExpectValue;
-        break;
-    }
-  }
-
-private:
-  enum ArrayWriteState
-  {
-    awsExpectValue,
-    awsExpectSeparator
-  } aws;
-}; // class ArrayWriteContext
-
-
-class PrintingTokenVisitor : public ITokenVisitor
-{
-public:
-  PrintingTokenVisitor(std::ostream& os)
-      : os_(os)
-  {}
-
-  virtual void on_object_start(const Token& token) override
-  {
-    assert_writeable_and_update(token);
+    write_separator();
     os() << "{";
     push_object();
-    newline_and_indent();\
+    newline_and_indent();
   }
 
-  virtual void on_field_separator(const Token& token) override
+  virtual void on_object_field_name(const std::string& name) override
   {
-    assert_writeable_and_update(token);
-    os() << ": ";
+    nlohmann::json j;
+    j = name;
+
+    write_separator();
+    os() << j.dump() << ": ";
+    mark_field_value_expected();
   }
 
-  virtual void on_object_end(const Token& token) override
+  virtual void on_object_end() override
   {
-    assert_writeable_and_update(token);
-    pop_object();
+    pop_context();
     newline_and_indent();
     os() << "}";
+    mark_value_written();
   }
 
-  virtual void on_array_start(const Token& token) override
+  virtual void on_array_start() override
   {
-    assert_writeable_and_update(token);
+    write_separator();
     os() << "[";
     push_array();
     newline_and_indent();
   }
 
-  virtual void on_array_end(const Token& token) override
+  virtual void on_array_end() override
   {
-    assert_writeable_and_update(token);
-    pop_array();
+    pop_context();
     newline_and_indent();
     os() << "]";
+    mark_value_written();
   }
 
-  virtual void on_element_separator(const Token& token) override
+  virtual void on_null() override
   {
-    assert_writeable_and_update(token);
-    os() << ",";
-    newline_and_indent();
+    write_separator();
+    os() << "null";
+    mark_value_written();
   }
 
-  virtual void on_string(const Token& token) override
+  virtual void on_string(const std::string& value) override
   {
-    assert_writeable_and_update(token);
-    write_token(token);
+    nlohmann::json j;
+    j = value; // json-escape the text
+
+    write_separator();
+    os() << j.dump();
+    mark_value_written();
   }
 
-  virtual void on_number(const Token& token) override
+  virtual void on_signed_number(std::int64_t value) override
   {
-    assert_writeable_and_update(token);
-    write_token(token);
+    write_separator();
+    os() << value;
+    mark_value_written();
   }
 
-  virtual void on_literal(const Token& token) override
+  virtual void on_unsigned_number(std::uint64_t value) override
   {
-    assert_writeable_and_update(token);
-    write_token(token);
+    write_separator();
+    os() << value;
+    mark_value_written();
   }
 
-  virtual void on_eof() override
+  virtual void on_floating_point_number(double value) override
   {
-    if (contexts_.size() != 0)
-    {
-      // fail
-      std::cerr << "Unterminated array or object!" << std::endl;
-    }
+    write_separator();
+    os() << value;
+    mark_value_written();
+  }
+
+  virtual void on_boolean(bool value) override
+  {
+    write_separator();
+    os() << value;
+    mark_value_written();
   }
 
 protected:
@@ -262,17 +137,7 @@ protected:
     return os_;
   }
 
-  bool is_expecting_object_key() const noexcept
-  {
-    return in_object() && contexts_.top()->is_expecting_object_key();
-  }
-
-private: // output functions
-  void write_token(const Token& token)
-  {
-    os().write(token.text, token.end - token.begin);
-  }
-
+protected:
   void newline_and_indent()
   {
     os() << newline;
@@ -287,122 +152,125 @@ private: // output functions
     }
   }
 
-private: // validation functions
-  void assert_writeable_and_update(const Token& token)
-  {
-    if (contexts_.size() > 0)
-    {
-      std::shared_ptr<IWriteContext> wc = contexts_.top();
-      if (!wc->can_write(token.type))
-      {
-        std::cerr << std::endl << "Token not writeable! tok=" << token << std::endl;
-        assert(false);
-      }
-      wc->on_written(token.type);
-    }
-  }
-
-  bool in_object() const noexcept
-  {
-    return contexts_.size() > 0 && contexts_.top()->is_object();
-  }
-
-  bool in_array() const noexcept
-  {
-    return contexts_.size() > 0 && !contexts_.top()->is_object();
-  }
-
-private:
   void push_object()
   {
-    contexts_.push(std::make_shared<ObjectWriteContext>());
+    contexts_.push({0, false});
   }
 
   void push_array()
   {
-    contexts_.push(std::make_shared<ArrayWriteContext>());
+    contexts_.push({0, false});
   }
 
-  void pop_object()
+  void pop_context()
   {
-    if (! in_object())
-    {
-      std::cerr << "Expected an object context" << std::endl;
-      assert(false);
-    }
     contexts_.pop();
   }
 
-  void pop_array()
+  void write_separator()
   {
-    if (! in_array())
+    if (value_needs_separator())
     {
-      std::cerr << "Expected an array context" << std::endl;
-      assert(false);
+      os() << ',';
+      newline_and_indent();
     }
-    contexts_.pop();
+  }
+
+  void mark_field_value_expected()
+  {
+    if (contexts_.size() > 0)
+    {
+      contexts_.top().expecting_field_value = true;
+    }
+  }
+
+  void mark_value_written()
+  {
+    if (contexts_.size() > 0)
+    {
+      contexts_.top().num_written++;
+      contexts_.top().expecting_field_value = false;
+    }
+  }
+
+  bool value_needs_separator()
+  {
+    return contexts_.size() > 0
+        && contexts_.top().num_written > 0
+        && !contexts_.top().expecting_field_value;
+  }
+
+private:
+  struct Context
+  {
+    std::size_t num_written {0};
+    bool expecting_field_value {false};
+  };
+
+  std::ostream& os_;
+  std::stack<Context> contexts_;
+};
+
+class AnsiColor
+{
+public:
+  typedef std::ostream& (*color_manip)(std::ostream&);
+
+  AnsiColor(std::ostream& os, color_manip color)
+      : os_(os)
+  {
+    os_ << color;
+  }
+
+  ~AnsiColor()
+  {
+    os_ << termcolor::reset;
   }
 
 private:
   std::ostream& os_;
-  std::stack<std::shared_ptr<IWriteContext>> contexts_;
-}; // class PrintingTokenVisitor
+};
 
-
-class AnsiPrintingTokenVisitor : public PrintingTokenVisitor
+class AnsiPrintingJsonVisitor : public PrintingJsonVisitor
 {
 public:
-  AnsiPrintingTokenVisitor(std::ostream& os) : PrintingTokenVisitor(os)
+  AnsiPrintingJsonVisitor(std::ostream& os)
+    : PrintingJsonVisitor(os)
   {}
 
-  virtual void on_string(const Token& token) override
-  {
-    AnsiColor::color_manip color;
-    if (is_expecting_object_key())
-    {
-      color = termcolor::blue_light;
-    }
-    else
-    {
-      color = termcolor::cyan;
-    }
+  virtual ~AnsiPrintingJsonVisitor() = default;
 
-    AnsiColor ac(os(), color);
-    PrintingTokenVisitor::on_string(token);
+  virtual void on_string(const std::string& value) override
+  {
+    AnsiColor color{os(), termcolor::cyan};
+    PrintingJsonVisitor::on_string(value);
   }
 
-private:
-  class AnsiColor
+  virtual void on_object_field_name(const std::string& name) override
   {
-  public:
-    typedef std::ostream& (*color_manip)(std::ostream&);
+    nlohmann::json j;
+    j = name;
 
-    AnsiColor(std::ostream& os, color_manip color)
-        : os_(os)
+    write_separator();
     {
-      os_ << color;
+      AnsiColor color{os(), termcolor::blue_light};
+      os() << j.dump();
     }
+    os() << ": ";
 
-    ~AnsiColor()
-    {
-      os_ << termcolor::reset;
-    }
+    mark_field_value_expected();
+  }
+};
 
-  private:
-    std::ostream& os_;
-  };
-}; // class AnsiPrintingTokenVisitor
+}
 
-} // anonymous namespace
-
-std::ostream& pretty_print_json(std::ostream& os, const std::string& json, bool use_ansi_colors)
+std::ostream& pretty_print_json(std::ostream& os, const nlohmann::json& json, bool use_ansi_colors)
 {
-  std::unique_ptr<ITokenVisitor> visitor = use_ansi_colors
-      ? std::make_unique<AnsiPrintingTokenVisitor>(os)
-      : std::make_unique<PrintingTokenVisitor>(os);
+  std::unique_ptr<IJsonVisitor> visitor = use_ansi_colors
+      ? std::make_unique<AnsiPrintingJsonVisitor>(os)
+      : std::make_unique<PrintingJsonVisitor>(os);
 
-  JsonLexer lexer(json);
-  lexer.tokenize(*visitor);
+  visit(json, *visitor);
 
   return os;
 }

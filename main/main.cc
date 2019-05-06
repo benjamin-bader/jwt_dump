@@ -162,12 +162,12 @@ Program::Program(int argc, char** argv)
 
 void Program::print_header(const jwt::Jwt& token) const
 {
-  jwt::pretty_print_json(std::cout, token.header(), use_ansi_colors);
+  jwt::pretty_print_json(std::cout, token.header_obj(), use_ansi_colors);
 }
 
 void Program::print_payload(const jwt::Jwt& token) const
 {
-  jwt::pretty_print_json(std::cout, token.payload(), use_ansi_colors);
+  jwt::pretty_print_json(std::cout, token.payload_obj(), use_ansi_colors);
 }
 
 void Program::print_everything(const jwt::Jwt& token) const
@@ -187,7 +187,10 @@ void Program::print_everything(const jwt::Jwt& token) const
 
 void Program::print_raw_json() const
 {
-  jwt::pretty_print_json(std::cout, input, use_ansi_colors);
+  nlohmann::json j;
+  j = input;
+
+  jwt::pretty_print_json(std::cout, j, use_ansi_colors);
 }
 
 void Program::run()
