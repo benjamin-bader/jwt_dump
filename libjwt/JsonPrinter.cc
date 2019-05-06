@@ -202,6 +202,10 @@ protected:
 private:
   struct Context
   {
+    Context(std::size_t num_written, bool expecting_field_value)
+        : num_written(num_written), expecting_field_value(expecting_field_value)
+    {}
+
     std::size_t num_written {0};
     bool expecting_field_value {false};
   };
