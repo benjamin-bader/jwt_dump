@@ -27,7 +27,6 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <utility>
 
 #include "libjwt/config.h"
-#include "libjwt/InputError.h"
 #include "libjwt/JsonVisitor.h"
 #include "libjwt/termcolor.hpp"
 

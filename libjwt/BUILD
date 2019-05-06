@@ -44,7 +44,6 @@ jd_cc_library(
     deps = [
         "@json",
         ":config",
-        ":input_error",
         ":json_visitor",
         ":termcolor",
     ],
@@ -66,6 +65,7 @@ jd_cc_library(
     srcs = [],
     hdrs = [],
     deps = [
+        "@json",
         ":config",
         ":input_error",
         ":json_printer",
