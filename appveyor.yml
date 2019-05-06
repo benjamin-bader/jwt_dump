@@ -9,7 +9,7 @@ clone_folder: C:\projects\jwt_dump
 
 before_build:
   - choco install bazel
-  - call "C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Auxiliary\Build\vcvars64.bat"
+  #- call "C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Auxiliary\Build\vcvars64.bat"
   - cd C:\projects\jwt_dump
 
 build_script:

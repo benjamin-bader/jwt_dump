@@ -81,6 +81,19 @@ Jwt::Jwt(const std::string& encoded)
     auto encoded_signature = trim(parts[2]);
     signature_ = encoded_signature; // no need to decode this, it's binary data
   }
+
+  header_obj_ = nlohmann::json::parse(header_);
+  payload_obj_ = nlohmann::json::parse(payload_);
+}
+
+bool Jwt::is_encrypted() const
+{
+  return header_obj_["typ"] == "JWE";
+}
+
+bool Jwt::is_signed() const
+{
+  return signature_.size() > 0;
 }
 
 }

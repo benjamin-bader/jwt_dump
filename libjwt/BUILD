@@ -29,11 +29,11 @@ jd_cc_library(
 )
 
 jd_cc_library(
-    name = "json_lexer",
-    srcs = ["JsonLexer.cc"],
-    hdrs = ["JsonLexer.h"],
+    name = "json_visitor",
+    srcs = ["JsonVisitor.cc"],
+    hdrs = ["JsonVisitor.h"],
     deps = [
-        ":input_error",
+        "@json",
     ],
 )
 
@@ -42,9 +42,9 @@ jd_cc_library(
     srcs = ["JsonPrinter.cc"],
     hdrs = ["JsonPrinter.h"],
     deps = [
+        "@json",
         ":config",
-        ":input_error",
-        ":json_lexer",
+        ":json_visitor",
         ":termcolor",
     ],
 )
@@ -54,6 +54,7 @@ jd_cc_library(
     srcs = ["Jwt.cc"],
     hdrs = ["Jwt.h"],
     deps = [
+        "@json",
         ":base64",
         ":input_error",
     ],
@@ -64,9 +65,9 @@ jd_cc_library(
     srcs = [],
     hdrs = [],
     deps = [
+        "@json",
         ":config",
         ":input_error",
-        ":json_lexer",
         ":json_printer",
         ":jwt",
     ],
