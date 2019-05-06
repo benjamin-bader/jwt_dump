@@ -27,7 +27,6 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <utility>
 
 #include "libjwt/config.h"
-#include "libjwt/JsonVisitor.h"
 #include "libjwt/termcolor.hpp"
 
 namespace jwt {
@@ -53,7 +52,7 @@ public:
 
   virtual void on_object_field_name(const std::string& name) override
   {
-    nlohmann::json j;
+    ordered_json j;
     j = name;
 
     write_separator();
@@ -94,7 +93,7 @@ public:
 
   virtual void on_string(const std::string& value) override
   {
-    nlohmann::json j;
+    ordered_json j;
     j = value; // json-escape the text
 
     write_separator();
@@ -251,7 +250,7 @@ public:
 
   virtual void on_object_field_name(const std::string& name) override
   {
-    nlohmann::json j;
+    ordered_json j;
     j = name;
 
     write_separator();
@@ -267,7 +266,7 @@ public:
 
 }
 
-std::ostream& pretty_print_json(std::ostream& os, const nlohmann::json& json, bool use_ansi_colors)
+std::ostream& pretty_print_json(std::ostream& os, const ordered_json& json, bool use_ansi_colors)
 {
   std::unique_ptr<IJsonVisitor> visitor = use_ansi_colors
       ? std::make_unique<AnsiPrintingJsonVisitor>(os)

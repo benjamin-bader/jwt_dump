@@ -23,7 +23,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 namespace jwt {
 
-void visit(const nlohmann::json& json, IJsonVisitor& visitor)
+void visit(const ordered_json& json, IJsonVisitor& visitor)
 {
   if (json.is_object())
   {

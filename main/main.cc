@@ -187,7 +187,7 @@ void Program::print_everything(const jwt::Jwt& token) const
 
 void Program::print_raw_json() const
 {
-  nlohmann::json j;
+  jwt::ordered_json j;
   j = input;
 
   jwt::pretty_print_json(std::cout, j, use_ansi_colors);

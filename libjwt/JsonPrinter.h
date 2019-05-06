@@ -23,11 +23,11 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <iosfwd>
 #include <string>
 
-#include "nlohmann/json.hpp"
+#include "libjwt/JsonVisitor.h"
 
 namespace jwt {
 
-std::ostream& pretty_print_json(std::ostream& os, const nlohmann::json& json, bool use_ansi_colors);
+std::ostream& pretty_print_json(std::ostream& os, const ordered_json& json, bool use_ansi_colors);
 
 } // namespace jwt
 

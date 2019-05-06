@@ -74,7 +74,7 @@ Jwt::Jwt(const std::string& encoded)
   auto encoded_header = parts[0];
   auto encoded_payload = parts[1];
 
-  header_ = encoded_header.size() != 0 ? base64_urlsafe_decode(encoded_header) : ""; 
+  header_ = encoded_header.size() != 0 ? base64_urlsafe_decode(encoded_header) : "";
   payload_ = encoded_payload.size() != 0 ? base64_urlsafe_decode(encoded_payload) : "";
   if (parts.size() == 3)
   {
@@ -82,8 +82,8 @@ Jwt::Jwt(const std::string& encoded)
     signature_ = encoded_signature; // no need to decode this, it's binary data
   }
 
-  header_obj_ = nlohmann::json::parse(header_);
-  payload_obj_ = nlohmann::json::parse(payload_);
+  header_obj_ = ordered_json::parse(header_);
+  payload_obj_ = ordered_json::parse(payload_);
 }
 
 bool Jwt::is_encrypted() const

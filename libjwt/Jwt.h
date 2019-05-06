@@ -20,7 +20,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 #include <string>
 
-#include "nlohmann/json.hpp"
+#include "libjwt/JsonVisitor.h"
 
 namespace jwt {
 
@@ -34,8 +34,8 @@ public:
   const std::string& payload() const { return payload_; }
   const std::string& signature() const { return signature_; }
 
-  const nlohmann::json& header_obj() const { return header_obj_; }
-  const nlohmann::json& payload_obj() const { return payload_obj_; }
+  const ordered_json& header_obj() const { return header_obj_; }
+  const ordered_json& payload_obj() const { return payload_obj_; }
 
   bool is_encrypted() const;
   bool is_signed() const;
@@ -45,8 +45,8 @@ private:
   std::string payload_;
   std::string signature_;
 
-  nlohmann::json header_obj_;
-  nlohmann::json payload_obj_;
+  ordered_json header_obj_;
+  ordered_json payload_obj_;
 };
 
 }

@@ -15,6 +15,13 @@ jd_cc_library(
 )
 
 jd_cc_library(
+    name = "fifo_map",
+    srcs = [],
+    hdrs = ["fifo_map.hpp"],
+    deps = [],
+)
+
+jd_cc_library(
     name = "input_error",
     srcs = ["InputError.cc"],
     hdrs = ["InputError.h"],
@@ -34,6 +41,7 @@ jd_cc_library(
     hdrs = ["JsonVisitor.h"],
     deps = [
         "@json",
+        ":fifo_map",
     ],
 )
 
@@ -57,6 +65,7 @@ jd_cc_library(
         "@json",
         ":base64",
         ":input_error",
+        ":json_visitor",
     ],
 )
 
