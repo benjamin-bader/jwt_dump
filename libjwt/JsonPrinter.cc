@@ -153,12 +153,12 @@ protected:
 
   void push_object()
   {
-    contexts_.push({0, false});
+    contexts_.push(Context{0, false});
   }
 
   void push_array()
   {
-    contexts_.push({0, false});
+    contexts_.push(Context{0, false});
   }
 
   void pop_context()
