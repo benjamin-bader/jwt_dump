@@ -63,7 +63,7 @@ std::string trim(const std::string& text)
 
 } // anonymous namespace
 
-Jwt::Jwt(const std::string& encoded)
+Jwt Jwt::parse(const std::string& encoded)
 {
   std::vector<std::string> parts = split(trim(encoded), '.');
   if (parts.size() != 2 && parts.size() != 3)
@@ -74,21 +74,34 @@ Jwt::Jwt(const std::string& encoded)
   auto encoded_header = parts[0];
   auto encoded_payload = parts[1];
 
-  header_ = encoded_header.size() != 0 ? base64_urlsafe_decode(encoded_header) : "";
-  payload_ = encoded_payload.size() != 0 ? base64_urlsafe_decode(encoded_payload) : "";
+  auto header = encoded_header.size() != 0 ? base64_urlsafe_decode(encoded_header) : "";
+  auto payload = encoded_payload.size() != 0 ? base64_urlsafe_decode(encoded_payload) : "";
+  std::string signature;
   if (parts.size() == 3)
   {
     auto encoded_signature = trim(parts[2]);
-    signature_ = encoded_signature; // no need to decode this, it's binary data
+    signature = encoded_signature; // no need to decode this, it's binary data
   }
 
-  header_obj_ = ordered_json::parse(header_);
-  payload_obj_ = ordered_json::parse(payload_);
+  return Jwt{header, payload, signature, ordered_json::parse(header), ordered_json::parse(payload)};
+}
+
+Jwt::Jwt(const std::string& original_header,
+         const std::string& original_payload,
+         const std::string& signature,
+         const ordered_json& header,
+         const ordered_json& payload)
+    : original_header_(original_header)
+    , original_payload_(original_payload)
+    , signature_(signature)
+    , header_(header)
+    , payload_(payload)
+{
 }
 
 bool Jwt::is_encrypted() const
 {
-  return header_obj_["typ"] == "JWE";
+  return header_["typ"] == "JWE";
 }
 
 bool Jwt::is_signed() const

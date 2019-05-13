@@ -27,26 +27,31 @@ namespace jwt {
 class Jwt
 {
 public:
-  Jwt(const std::string& encoded);
-  Jwt(const std::string& header, const std::string& payload, const std::string& signature);
+  Jwt(const std::string& original_header,
+      const std::string& original_payload,
+      const std::string& signature,
+      const ordered_json& header,
+      const ordered_json& payload);
 
-  const std::string& header() const { return header_; }
-  const std::string& payload() const { return payload_; }
+  static Jwt parse(const std::string& encoded);
+
+  const std::string& original_header() const { return original_header_; }
+  const std::string& original_payload() const { return original_payload_; }
   const std::string& signature() const { return signature_; }
 
-  const ordered_json& header_obj() const { return header_obj_; }
-  const ordered_json& payload_obj() const { return payload_obj_; }
+  const ordered_json& header() const { return header_; }
+  const ordered_json& payload() const { return payload_; }
 
   bool is_encrypted() const;
   bool is_signed() const;
 
 private:
-  std::string header_;
-  std::string payload_;
+  std::string original_header_;
+  std::string original_payload_;
   std::string signature_;
 
-  ordered_json header_obj_;
-  ordered_json payload_obj_;
+  ordered_json header_;
+  ordered_json payload_;
 };
 
 }
