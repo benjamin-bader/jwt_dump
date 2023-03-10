@@ -24,4 +24,6 @@ jobs:
           cmake -B build -S .
           cd build
           cmake --build .
-          ctest -V
+
+          # Note that '-C "Debug"' is just for msbuild - it has no effect on other platforms/tools.
+          ctest -V -C "Debug"
