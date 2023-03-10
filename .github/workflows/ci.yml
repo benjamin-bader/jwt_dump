@@ -21,7 +21,7 @@ jobs:
       - name: Build and run
         shell: bash
         run: |
-          cmake -B build -S . -G Ninja -DCMAKE_BUILD_TYPE=Debug
+          cmake -B build -S .
           cd build
           cmake --build .
           ctest -V
