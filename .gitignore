@@ -6,7 +6,7 @@ Testing
 jwt_dump
 .vscode
 
-bazel-*
+.cache
 
 .DS_Store
 
