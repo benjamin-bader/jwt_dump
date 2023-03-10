@@ -23,8 +23,9 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <sstream>
 #include <vector>
 
-#include "libjwt/Base64.h"
 #include "libjwt/InputError.h"
+
+#include "Base64.h"
 
 namespace jwt {
 

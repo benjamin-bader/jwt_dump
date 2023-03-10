@@ -27,7 +27,8 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <utility>
 
 #include "libjwt/config.h"
-#include "libjwt/termcolor.hpp"
+
+#include "termcolor.hpp"
 
 namespace jwt {
 
